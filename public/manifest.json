@@ -1,6 +1,6 @@
 {
-  "short_name": "React App",
-  "name": "Create React App Sample",
+  "short_name": "ANS Store",
+  "name": "Anspar Namespace for user owned profiles",
   "icons": [
     {
       "src": "favicon.ico",

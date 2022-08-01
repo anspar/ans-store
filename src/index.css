@@ -1,10 +1,23 @@
-body {
-  margin: 0;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+@font-face {
+  font-family: 'anspar_primary';
+  src: url(./fonts/Changa/Changa-VariableFont_wght.ttf);
+}
+
+html{
+  min-height: 100vh;
+  background: linear-gradient(30deg, var(--as-primary), var(--as-light));
+  padding-bottom: 1%;
+  position: relative;
+}
+
+*:not(i) {
+  font-family: 'anspar_primary', arial !important;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  margin: 0;
 }
 
 code {

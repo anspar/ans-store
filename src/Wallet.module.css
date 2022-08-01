@@ -1,0 +1,23 @@
+.nav {
+    top: 0;
+    z-index: 10000;
+    width: 100%;
+    background-color: var(--as-light);
+    padding: 0.5rem 0;
+    position: sticky;
+}
+
+.navAlign {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 0.5rem;
+}
+
+.uploadMargin {
+    margin: 0.5rem;
+}
+
+.contentMargin {
+    margin: 5% 0.5rem;
+}

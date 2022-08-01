@@ -1,24 +1,24 @@
-import logo from './logo.svg';
+import "@anspar/anspar-theme/styles.css";
 import './App.css';
+import walletStyles from "./Wallet.module.css";
+import { Wallet, WalletContext } from '@anspar/ans-wallet';
+import { ThemeSwitch } from '@anspar/anspar-theme';
+import Main from "./Main/Main";
 
 function App() {
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <WalletContext testnets>
+      <div className={`${walletStyles.nav} as-shadow-sm`}>
+        <div className={walletStyles.navAlign}>
+          <ThemeSwitch style={{width: "30px", display: "flex", justifyContent: "center"}}/>
+          <Wallet/>
+        </div>
+      </div>
+      <div className={walletStyles.contentMargin}>
+        {/* <HosqUploadFiles allowPinning /> */}
+        <Main />
+      </div>
+    </WalletContext>
   );
 }
 
