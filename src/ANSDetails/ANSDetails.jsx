@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react'
-import { useGet, useANSRead, useANS1155Read, hosqUpload } from "@anspar/ans-wallet";
+import { useGet, useANSRead, useANS1155Read, hosqUpload, useANSWrite } from "@anspar/ans-wallet";
 import { useNetwork, useAccount } from "wagmi";
 import { CircularProgress, CircularProgressLabel } from "@chakra-ui/progress";
 import { ethers } from "ethers";
@@ -10,10 +10,10 @@ import {
     DivContentCenterResponsive,
     DivContentStartCol,
     DivContentCenter,
-    DivFixedCenterFull
+    DivFixedCenterFullBgBlur
 } from "./ANSDetails.styles";
 
-function ShowInfo({ info, chainId, chainSymbol, ...props }) {
+function ShowInfo({ info, chainId, chainSymbol, query, ...props }) {
     const { address, isConnected } = useAccount()
     const forSale = useANS1155Read(chainId, "get_amount_for_sale", [props.data ? props.data.id : "0", address]);
     const balanceOf = useANS1155Read(chainId, "balanceOf", [address, props.data ? props.data.id : "0"]);
@@ -35,8 +35,6 @@ function ShowInfo({ info, chainId, chainSymbol, ...props }) {
         website.current.value = info.website || '';
         twitter.current.value = info.twitter || '';
         github.current.value = info.github || '';
-        // console.log("info", info)
-        // console.log("imim", image);
     }, [info])
 
     const inputs = {
@@ -45,9 +43,9 @@ function ShowInfo({ info, chainId, chainSymbol, ...props }) {
 
     const Btns = balanceOf.data && balanceOf.data.gt(ethers.BigNumber.from('0'))
         ?
-        <SellUpdateBtns forSale={forSale} address={address} ansId={props.data?.id} chainId={chainId} chainSymbol={chainSymbol} inputs={inputs}/>
+        <SellUpdateBtns forSale={forSale} address={address} ansId={props.data?.id} chainId={chainId} chainSymbol={chainSymbol} inputs={inputs} />
         :
-        <BuyBtn forSale={forSale} ownerAddress={props.data?.target} ansId={props.data?.id} chainId={chainId} chainSymbol={chainSymbol} inputs={inputs}/>;
+        <BuyBtn forSale={forSale} query={query} ownerAddress={props.data?.target} ansId={props.data?.id} chainId={chainId} chainSymbol={chainSymbol} inputs={inputs} />;
 
 
     if (isConnected) return (
@@ -58,8 +56,16 @@ function ShowInfo({ info, chainId, chainSymbol, ...props }) {
             </span>
             <br />
             <DivContentBetween>
-                <span style={{ margin: "0 0.5rem", width: "95px" }} className='as-text-size-sm as-text-bold as-text-primary'>{props.query}</span>
+                <span style={{ margin: "0 0.5rem", width: "95px" }} className='as-text-size-sm as-text-bold as-text-primary'>{query}</span>
             </DivContentBetween>
+            {
+                props.data?.target === address ?
+                    <DivContentStartCol>
+                        <SetDefault chainId={chainId} query={query} />
+                    </DivContentStartCol>
+                    :
+                    <></>
+            }
             <DivContentBetween>
                 <span style={{ margin: "0 0.5rem", width: "95px" }}>Name</span>
                 <Input ref={name} className=" as-text-size-l" placeholder='Your Name' />
@@ -104,6 +110,7 @@ function ShowInfo({ info, chainId, chainSymbol, ...props }) {
                 <Input ref={github} className=" as-text-size-l" placeholder='https://github.com/user_name' />
             </DivContentBetween>
             <br />
+
             {
                 balanceOf.isSuccess && forSale.isSuccess ? Btns : <></>
             }
@@ -153,30 +160,45 @@ function SellUpdateBtns(props) {
     )
 }
 
-function BuyBtn({ forSale, ownerAddress, ansId, chainId, chainSymbol, inputs }) {
+function BuyBtn({ forSale, ownerAddress, ansId, chainId, chainSymbol, inputs, query }) {
     const minted = !ethers.BigNumber.from(ansId ? ansId.toString() : '0').isZero()
     return (
         <DivContentStartCol>
             {
                 minted ?
-                    <TotalFee chainId={chainId} chainSymbol={chainSymbol} 
-                                ansId={ansId} ownerAddress={ownerAddress} forSale={forSale} inputs={inputs}/>
+                    <TotalFee chainId={chainId} chainSymbol={chainSymbol}
+                        ansId={ansId} ownerAddress={ownerAddress} forSale={forSale} inputs={inputs} />
                     :
-                    <MintFee chainId={chainId} chainSymbol={chainSymbol} inputs={inputs}/>
+                    <MintFee chainId={chainId} chainSymbol={chainSymbol} inputs={inputs} query={query} />
             }
         </DivContentStartCol>
     )
 }
 
-function MintFee({ chainSymbol, chainId, inputs }) {
+function MintFee({ chainSymbol, chainId, inputs, query }) {
     const contract_fee = useANS1155Read(chainId, "get_min_dev_fee", []);
+    const [newCid, setNewCid] = useState('');
+    const mint = useANSWrite(chainId, "mint_ans",
+        [contract_fee.data ? contract_fee.data.toString() : '0', `${query}`, newCid],
+        { value: contract_fee.data ? contract_fee.data.toString() : '0' });
     const [progress, setProgress] = useState(0);
+    const [showLoading, setShowLoading] = useState(false);
     const handelBuy = () => {
-        console.log("in", inputs);
         const toUpload = getUserANSInput(inputs);
-        console.log("tu", toUpload);
-        hosqUpload({...toUpload, wrapInDir: true, setResponse: (r)=>{console.log("rr",r)}, setProgress})
+        setShowLoading(true)
+        hosqUpload({
+            ...toUpload, wrapInDir: true, setResponse: (r) => {
+                setShowLoading(false)
+                setNewCid(r.Hash);
+            }, setProgress, setError: () => { setShowLoading(false) }
+        })
     }
+
+    useEffect(() => {
+        if (newCid === '') return
+        mint.write();
+    }, [newCid])
+
     return (
         <>
             <ContractFee fee={`${chainSymbol} ${ethers.utils.formatEther(contract_fee.data ? contract_fee.data.toString() : '0')}`}
@@ -184,10 +206,10 @@ function MintFee({ chainSymbol, chainId, inputs }) {
                 style={{ margin: "0 1rem" }} />
             <DivContentCenter>
                 <button className={`as-btn as-btn-primary`} style={{ width: "100%", margin: "0 1rem" }}
-                 onClick={handelBuy}>Buy</button>
+                    onClick={handelBuy}>Buy</button>
             </DivContentCenter>
             {
-                progress>0 && progress!==100? <Loading progress={progress}/>: <></>
+                showLoading ? <Loading progress={progress} /> : <></>
             }
         </>
     )
@@ -215,13 +237,13 @@ function TotalFee({ chainSymbol, chainId, ownerAddress, ansId, forSale }) {
                 style={{ margin: "0.2rem 1rem" }} /> */}
             <DivContentCenter>
                 <button className={`${classes} as-btn as-btn-primary`} style={{ width: "100%", margin: "0 1rem" }}
-                    disabled={not_for_sale}>{not_for_sale? "Not Available" : "Buy"}</button>
+                    disabled={not_for_sale}>{not_for_sale ? "Not Available" : "Buy"}</button>
             </DivContentCenter>
         </>
     )
 }
 
-function getUserANSInput(inputs){
+function getUserANSInput(inputs) {
     let info = {};
     info.name = inputs.name.current.value;
     info.about = inputs.about.current.value;
@@ -231,30 +253,31 @@ function getUserANSInput(inputs){
     info.website = inputs.website.current.value;
     info.twitter = inputs.twitter.current.value;
     info.github = inputs.github.current.value;
+    info.background_art = '';
     info["nft_type"] = "ans";
     info["type"] = "dir";
     const blob = new Blob([JSON.stringify(info)])
-    const files = inputs.image.current.files[0]? [inputs.image.current.files[0]] : []; //just passing the files causes an error
-    return {files, blobs: [{blob, name:"info.json"}] }
+    const files = inputs.image.current.files[0] ? [inputs.image.current.files[0]] : []; //just passing the files causes an error
+    return { files, blobs: [{ blob, name: "info.json" }] }
 }
 
 function GetInfo(props) {
     const { data, isLoading } = useGet(`${props.data.cid}/info.json`, true);
     return (
         isLoading ?
-            <Loading isIndeterminate={true}/>
+            <Loading isIndeterminate={true} />
             :
             <ShowInfo {...props} info={data} />
     )
 }
 
-function Loading({isIndeterminate, progress}){
-    return(
-        <DivFixedCenterFull>
-            <CircularProgress size='80px' color="var(--as-primary)" isIndeterminate={isIndeterminate} value={progress}>
-                <CircularProgressLabel>{isIndeterminate?"Loading": `${progress}%`}</CircularProgressLabel>
+function Loading({ isIndeterminate, progress }) {
+    return (
+        <DivFixedCenterFullBgBlur>
+            <CircularProgress size='80px' color="var(--as-primary)" isIndeterminate={isIndeterminate || progress === 100} value={progress}>
+                <CircularProgressLabel>{isIndeterminate ? "Loading" : `${progress}%`}</CircularProgressLabel>
             </CircularProgress>
-        </DivFixedCenterFull>
+        </DivFixedCenterFullBgBlur>
     )
 }
 
@@ -264,6 +287,16 @@ function ContractFee({ fee, name, ...props }) {
             {name ? name : 'Contract'} fee
             <span className='as-text-bold' style={{ margin: "0 0.5rem" }} >{fee}</span>
         </span>
+    )
+}
+
+function SetDefault({ chainId, query }) {
+    const setDefault = useANSWrite(chainId, "set_default",
+        [`${query}`]);
+
+    return (
+        <button className={`${setDefault.isLoading ? "as-loading" : ""} as-btn as-btn-primary`} style={{ maxWidth: "100%", margin: "0 0.5rem"}}
+            onClick={() => { setDefault.write() }}>Set As Default ANS</button>
     )
 }
 

@@ -69,7 +69,7 @@ export const DivContentStartCol = styled.div`
     margin-bottom: 0.5rem;
 `;
 
-export const DivFixedCenterFull = styled.div`
+export const DivFixedCenterFullBgBlur = styled.div`
     width: 100vw;
     height: 100vh;
     top: 0;
@@ -79,4 +79,5 @@ export const DivFixedCenterFull = styled.div`
     justify-content: center;
     align-items: center;
     z-index: 10000;
+    backdrop-filter: blur(10px);
 `;
