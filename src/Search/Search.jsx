@@ -22,7 +22,7 @@ export default function Search() {
     const input = useRef();
     const [query, setQuery] = useState("");
     const [isLoading, setLoading] = useState(false);
-    console.log(query)
+    // console.log(query)
     return (
         <Div style={{flexDirection: "column"}}>
             <Div style={{maxWidth: "720px", borderStyle: "none", borderRadius: "1rem"}} 
