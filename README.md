@@ -6,6 +6,6 @@
     npm start
 
 ### To build type
-    npm build
+    npm run build
 
 [anspar.io](https://anspar.io)
